@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>レアルから円へ換算</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box; /* パディングを含めて幅を計算 */
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 20px;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ブラジルレアル → 日本円 換算</h1>
+        <p>ブラジルレアル (BRL) を日本円 (JPY) に換算します。</p>
+        <input type="number" id="brlAmount" placeholder="レアルの金額を入力" min="0">
+        <button onclick="convertCurrency()">換算</button>
+        <div id="result"></div>
+        <div class="error" id="error-message"></div>
+        <p style="margin-top: 20px; font-size: 12px; color: #777;">※現在の為替レートはOpen Exchange Ratesから取得されます。</p>
+    </div>
+
+    <script>
+        async function convertCurrency() {
+            const brlAmount = document.getElementById('brlAmount').value;
+            const resultDiv = document.getElementById('result');
+            const errorMessageDiv = document.getElementById('error-message');
+            resultDiv.textContent = ''; // 前回の結果をクリア
+            errorMessageDiv.textContent = ''; // エラーメッセージをクリア
+
+            if (brlAmount === '' || isNaN(brlAmount) || parseFloat(brlAmount) < 0) {
+                errorMessageDiv.textContent = '有効なレアルの金額を入力してください。';
+                return;
+            }
+
+            const apiKey = 'YOUR_OPEN_EXCHANGE_RATES_API_KEY'; // ここにあなたのAPIキーを貼り付けてください！
+            const url = `https://open.er-api.com/v6/latest/BRL?apikey=${apiKey}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.rates && data.rates.JPY) {
+                    const rate = data.rates.JPY;
+                    const jpyAmount = parseFloat(brlAmount) * rate;
+                    resultDiv.textContent = `${parseFloat(brlAmount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} は約 ${jpyAmount.toLocaleString('ja-JP', { style: 'currency', currency: 'JPY' })} です。`;
+                } else {
+                    errorMessageDiv.textContent = '為替レートの取得に失敗しました。後でもう一度お試しください。';
+                }
+            } catch (error) {
+                console.error('API呼び出しエラー:', error);
+                errorMessageDiv.textContent = 'ネットワークエラーが発生しました。インターネット接続を確認してください。';
+            }
+        }
+    </script>
+</body>
+</html>
