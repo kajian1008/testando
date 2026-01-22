@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>レアル ⇔ 円 換算ツール</title>
+    <style>
+        body {
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f2f5;
+            margin: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        h1 {
+            color: #333;
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+        select, input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            width: 100%;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 25px;
+            font-size: 22px;
+            color: #2c3e50;
+            font-weight: bold;
+            word-break: break-all;
+            min-height: 1.2em; /* 結果がない時も高さを確保 */
+        }
+        .error {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .note {
+            margin-top: 20px; 
+            font-size: 11px; 
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🇧🇷 レアル ⇔ 🇯🇵 円 換算</h1>
+        
+        <select id="conversionType" onchange="updatePlaceholder()">
+            <option value="brl_to_jpy">🇧🇷 レアル (BRL) → 🇯🇵 日本円 (JPY)</option>
+            <option value="jpy_to_brl">🇯🇵 日本円 (JPY) → 🇧🇷 レアル (BRL)</option>
+        </select>
+
+        <input type="number" id="amount" placeholder="レアルの金額を入力" min="0">
+        
+        <button onclick="convertCurrency()">換算する</button>
+        
+        <div id="result"></div>
+        <div class="error" id="error-message"></div>
+        
+        <p class="note">レート取得元: ExchangeRate-API (Free)</p>
+    </div>
+
+    <script>
+        // 設定
+        const CONFIG = {
+            brl_to_jpy: {
+                base: 'BRL',
+                target: 'JPY',
+                localeBase: 'pt-BR',
+                localeTarget: 'ja-JP',
+                placeholder: 'レアルの金額を入力'
+            },
+            jpy_to_brl: {
+                base: 'JPY',
+                target: 'BRL',
+                localeBase: 'ja-JP',
+                localeTarget: 'pt-BR',
+                placeholder: '円の金額を入力'
+            }
+        };
+
+        function updatePlaceholder() {
+            const type = document.getElementById('conversionType').value;
+            document.getElementById('amount').placeholder = CONFIG[type].placeholder;
+            document.getElementById('result').textContent = '';
+            document.getElementById('error-message').textContent = '';
+        }
+
+        async function convertCurrency() {
+            const amountInput = document.getElementById('amount');
+            const resultDiv = document.getElementById('result');
+            const errorDiv = document.getElementById('error-message');
+            const type = document.getElementById('conversionType').value;
+            const config = CONFIG[type];
+
+            // リセット
+            resultDiv.textContent = '計算中...';
+            errorDiv.textContent = '';
+
+            const amountVal = parseFloat(amountInput.value);
+
+            if (isNaN(amountVal) || amountVal < 0) {
+                resultDiv.textContent = '';
+                errorDiv.textContent = '正しい金額を入力してください。';
+                return;
+            }
+
+            // ★APIキー不要の公開APIを使用
+            const url = `https://api.exchangerate-api.com/v4/latest/${config.base}`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                const rate = data.rates[config.target];
+                
+                if (rate) {
+                    const converted = amountVal * rate;
+
+                    const textBase = amountVal.toLocaleString(config.localeBase, { style: 'currency', currency: config.base });
+                    const textTarget = converted.toLocaleString(config.localeTarget, { style: 'currency', currency: config.target });
+
+                    resultDiv.textContent = `${textBase} = ${textTarget}`;
+                } else {
+                    throw new Error('レート情報が見つかりませんでした');
+                }
+
+            } catch (error) {
+                console.error(error);
+                resultDiv.textContent = '';
+                errorDiv.textContent = '通信エラー: データを取得できませんでした。';
+            }
+        }
+    </script>
+</body>
+</html>
